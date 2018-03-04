@@ -84,10 +84,11 @@ for(i in 1:length(spCodes)){
   
   # Calibration of simple bivariate models
   ESM_ModObject <- ecospat.ESM.Modeling(data = BIOMOD_Data,
-                                        models = c('GLM','RF','GAM','GBM','FDA','MARS','MAXENT.Tsuruoka'),
+                                        #models = c('GLM','RF','GAM','GBM','FDA','MARS','MAXENT.Tsuruoka'),
+                                        models = c('GLM','RF','GAM'),
                                         models.options = BIOMOD_ModOptions,
                                         NbRunEval = 1,
-                                        DataSplit = 75,
+                                        DataSplit = 80,
                                         weighting.score = c("AUC"),
                                         parallel = TRUE) 
   
@@ -101,7 +102,7 @@ for(i in 1:length(spCodes)){
                                                   threshold = 0.9)
   
   write.csv(ESM_EnsembleMod$ESM.evaluations,
-            file = paste("ESM_ensProj_",selSpecies,".csv",sep=""))
+            file = paste(selSpecies,"_ESM_EvaluationMetrics_ensProj.csv",sep=""))
   
   
   
@@ -112,7 +113,7 @@ for(i in 1:length(spCodes)){
   for(projName in projList){
     
     
-    # Projection of simple bivariate models into new feature space 
+    # Projection of simple bivariate models into new feature space -------------
     # Uses eval / parse due to new.env!!!
     #
     
@@ -127,7 +128,7 @@ for(i in 1:length(spCodes)){
     cat("done.\n")
     
     
-    # Projection of calibrated ESMs into new space 
+    # Projection of calibrated ESMs into new space -------------
     #
     cat("\n\nPerforming ensemble projection for:",projName,"...")
     
@@ -137,15 +138,16 @@ for(i in 1:length(spCodes)){
     cat("done.\n")
     
     
-    # Save R objects 
+    # Save R objects -------------
     #
     save(BIOMOD_Data, ESM_EnsembleMod, ESM_EnsembleMod, ESM_Proj, ESM_ensProjection, 
-         file = paste("ESM_Objects_",projName,"_",selSpecies,".RData",sep=""))
+         file = paste(selSpecies,"_ESM_Objects_",projName,".RData",sep=""))
     
-    # Write raster with ensembles
+    
+    # Write raster with ensembles -------------
     #
     writeRaster(ESM_ensProjection, 
-                filename = paste("ESM_ensProj_",projName,"_",selSpecies,".tif",sep=""),
+                filename = paste(selSpecies,"_ESM_ensProj_",projName,".tif",sep=""),
                 overwrite=TRUE)
   }
 
