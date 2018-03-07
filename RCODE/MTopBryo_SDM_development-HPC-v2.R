@@ -22,8 +22,8 @@ setwd(outDir)
 
 ## Start cluster for parallel processing -------------------------------------------------------------
 
-cl <- makeCluster(25)
-registerDoParallel(cl)
+#cl <- makeCluster(25)
+#registerDoParallel(cl)
 
 
 ## Load data for selected bryophyte species ----------------------------------------------------------
@@ -62,15 +62,46 @@ for(fld in dirList){
 }
 
 
+# Model options for biomod2
+BIOMOD_ModOptions <- BIOMOD_ModelingOptions(GAM = list(k=4),
+                                            RF  = list(ntree=250),
+                                            GBM = list(n.trees = 1000,
+                                                       interaction.depth = 5),
+                                            ANN = list(maxit=150)
+)
+
+
+
+# Recover previous model runs -----------------------------------------------------------
+# 
+# selSpecies <- "ANDHEI"
+# 
+# ## Output directory
+# outDir <- "~/myfiles/MountainBryophytesSDM/OUT/ESM.BIOMOD.output_ANDHEI"
+# 
+# #setwd("./OUT")
+# setwd(outDir)
+# 
+# # BIOMOD2 modelling object
+# load("ESM_Modeling..models.1520351644.out") # ANDHEI
+# ESM_ModObject <- output
+# 
+# # BIOMOD2 ensemble modelling object (for a specific threshold measure/value)
+# load("ESM_EnsembleModeling...TSS.0.85.1520351644.out") # ANDHEI
+# ESM_EnsembleMod <- output
+# 
+# 
+
+
 
 # Loop through all species ---------------------------------------------------------------------------
 #
 #
 #
 #
-for(i in 4:length(spCodes)){
-#for(i in 10){
-  
+#for(i in 1:length(spCodes)){
+for(i in 3){
+    
   # Selected species
   selSpecies <- spCodes[i]
   
@@ -85,27 +116,24 @@ for(i in 4:length(spCodes)){
                                        PA.nb.absences = 10000,
                                        PA.strategy = 'random')
   
-  # Model options for biomod2
-  BIOMOD_ModOptions <- BIOMOD_ModelingOptions(GAM = list(k=4),
-                                              RF  = list(ntree=250),
-                                              GBM = list(n.trees = 1000,
-                                                         interaction.depth = 5),
-                                              ANN = list(maxit=150)
-                                              )
   
   # Calibration of simple bivariate models
-  ESM_ModObject <- ecospat.ESM.Modeling(data = BIOMOD_Data,
-                                        #models = c('GLM','RF','GAM','GBM','FDA','MARS','MAXENT.Tsuruoka'),
+  ESM_ModObject <- try(ecospat.ESM.Modeling(data = BIOMOD_Data,
                                         models = c('GLM','CTA','GAM','RF','ANN','MARS'),
                                         models.options = BIOMOD_ModOptions,
                                         NbRunEval = 10,
                                         DataSplit = 80,
                                         weighting.score = "TSS",
-                                        parallel = TRUE) 
+                                        parallel = FALSE))
   
   
   #ESM_ModelsEvaluations <- lapply(ESM_ModObject$mymodels, get_evaluations)
   
+  if(inherits(ESM_ModObject,"try-error")){
+    cat("\n\n!!!Error while performing model calibration for:", selSpecies,"!!!\n\n\n")
+    next
+  }
+    
   
   # Evaluation and average of simple bivariate models to ESMs
   ESM_EnsembleMod <- ecospat.ESM.EnsembleModeling(ESM_ModObject,
@@ -116,8 +144,7 @@ for(i in 4:length(spCodes)){
             file = paste(selSpecies,"_ESM_EvaluationMetrics_ensProj.csv",sep=""))
   
   
-  
-  # Loop through all the raster stacks containing different projections
+  # Loop through all the raster stacks containing different projections --------
   #
   #
   #
@@ -131,20 +158,85 @@ for(i in 4:length(spCodes)){
     cat("\n\nPerforming ESM projection for:",projName,"...\n")
     
     eval(parse(text=
-    paste("ESM_Proj <- ecospat.ESM.Projection(ESM.modeling.output = ESM_ModObject,
+    paste("ESM_Proj <- try(ecospat.ESM.Projection(ESM.modeling.output = ESM_ModObject,
                                      new.env = ",projName,",
-                                     parallel = TRUE)",sep="")
+                                     parallel = FALSE))",sep="")
     ))
     
+    
+    if(inherits(ESM_Proj,"try-error")){
+      cat("\n\n!!!Error while performing model spatiotemporal projections for:", selSpecies,"and projection:",projName,"!!!\n\n\n")
+      next
+    }
+    
     cat("done.\n")
+    
+    
+    # Checking files -----------------------------------------------------------
+    #
+    
+    cat("Checking files and weights:\n")
+    
+    w <- ESM_EnsembleMod$weights
+    rstFiles <- c()
+    failedBivCombns <- c()
+    
+    for(i in ESM_Proj$which.biva){
+      
+      dirPath <- paste(ESM_ModObject$wd,"/ESM.BIOMOD.",i,"/proj_",ESM_Proj$name.env,".ESM.BIOMOD.",i,".",ESM_Proj$modeling.id,sep="")
+      tmpFiles <- list.files(dirPath,pattern=".grd$|.gri$",full.names = TRUE)
+      
+      rstFiles <- c(rstFiles, tmpFiles)
+      
+      if(length(tmpFiles)==0){
+        failedBivCombns <- c(failedBivCombns,i)
+      }
+      #print(i)
+      #print(tmpFiles)
+    }
+    
+    # Replace metadata in objects that failed to obtain projections
+    #
+    if(length(failedBivCombns) != 0){
+      
+      # Create the modified ESM/BIOMOD objects
+      ESM_Proj_mod <- ESM_Proj
+      ESM_EnsembleMod_mod <- ESM_EnsembleMod
+      
+      # Model codes to remove / not run or finished during projection step
+      modsToRemove <- paste(rep(ESM_Proj$models, each=length(failedBivCombns)),".ESM.BIOMOD.",failedBivCombns,sep="")
+      
+      # New weights generated by removing the unfinished projections
+      new_w <- w[!(names(w) %in% modsToRemove)]
+      
+      # Input values into the mod objects
+      ESM_EnsembleMod_mod$weights <- new_w
+      ESM_Proj_mod$pred.biva <- rstFiles
+      
+      cat("Found",length(failedBivCombns),"files lacking for combns:",paste(failedBivCombns,collapse="/"),"...\n")
+    }
+    
+    cat("done!\n\n")
     
     
     # Projection of calibrated ESMs into new space -------------
     #
     cat("\n\nPerforming ensemble projection for:",projName,"...\n")
     
-    ESM_ensProjection <- ecospat.ESM.EnsembleProjection(ESM.prediction.output = ESM_Proj,
-                                                        ESM.EnsembleModeling.output = ESM_EnsembleMod)
+    
+    if(length(failedBivCombns) != 0){
+      ESM_ensProjection <- try(ecospat.ESM.EnsembleProjection(ESM.prediction.output = ESM_Proj_mod,
+                                                              ESM.EnsembleModeling.output = ESM_EnsembleMod_mod))
+    }else{
+      ESM_ensProjection <- try(ecospat.ESM.EnsembleProjection(ESM.prediction.output = ESM_Proj,
+                                                              ESM.EnsembleModeling.output = ESM_EnsembleMod))
+    }  
+    
+    
+    if(inherits(ESM_ensProjection,"try-error")){
+      cat("\n\n!!!Error while performing ensemble model projections for:", selSpecies,"and projection:",projName,"!!!\n\n\n")
+      next
+    }
     
     cat("done.\n")
     
@@ -171,3 +263,6 @@ for(i in 4:length(spCodes)){
     setwd(outDir)
   
 }
+
+
+
