@@ -22,8 +22,8 @@ setwd(outDir)
 
 ## Start cluster for parallel processing -------------------------------------------------------------
 
-cl <- makeCluster(25)
-registerDoParallel(cl)
+#cl <- makeCluster(25)
+#registerDoParallel(cl)
 
 
 ## Load data for selected bryophyte species ----------------------------------------------------------
@@ -45,14 +45,12 @@ spCodes <- unique(spData@data$Cod_esp)
 dirList <- list.dirs("../DATA/RASTER/Worldclim_1km")[-1] #Remove the base dir
 projList <- c() # Vector for holding the name for each projection
 
-
-#fl.topoVars <- list.files("../DATA/RASTER/TopoVars", full.names = TRUE, pattern = ".tif$")[c(1,2,3,5)]
 fl.topoVars <- list.files("../DATA/RASTER/TopoVars", full.names = TRUE, pattern = ".tif$")
 
 
 i <- 0
 for(fld in dirList){
-
+  
   cat("-> Loading data for:",fld,".....\n\n")  
   i<-i+1
   projList[i] <- basename(fld)
@@ -70,65 +68,30 @@ for(fld in dirList){
 }
 
 
-# Model options for biomod2
-BIOMOD_ModOptions <- BIOMOD_ModelingOptions(GAM = list(k=4),
-                                            RF  = list(ntree=250),
-                                            GBM = list(n.trees = 1000,
-                                                       interaction.depth = 5),
-                                            ANN = list(maxit=150),
-                                            MAXENT.Phillips = list(path_to_maxent.jar="~/myfiles/MountainBryophytesSDM/OUT/maxent.jar",
-                                                                   memory_allocated=3000)
-)
-
 
 # Loop through all species ---------------------------------------------------------------------------
 #
 #
 #
 #
-for(i in 1:length(spCodes)){
-#for(i in 3){
+#for(i in 1:length(spCodes)){
+for(i in 1){
     
   # Selected species
   selSpecies <- spCodes[i]
   
-  # Filter data to the selected species
-  spDataSelSpecies <- as(spData[spData@data$Cod_esp==selSpecies,],"SpatialPoints")
   
-  # Perform data formatting
-  BIOMOD_Data <- BIOMOD_FormatingData( resp.var = spDataSelSpecies,
-                                       expl.var = a2000,
-                                       resp.name = selSpecies,
-                                       PA.nb.rep = 1, # cannot be >1...
-                                       PA.nb.absences = 10000,
-                                       PA.strategy = 'random')
+  # Recover files 
+  load(list.files(paste("./ESM.BIOMOD.output_",selSpecies,sep=""), 
+                  pattern="ESM_Modeling..models.", full.names = TRUE)[1])
+  ESM_ModObject <- output
   
-  
-  # Calibration of simple bivariate models
-  ESM_ModObject <- try(ecospat.ESM.Modeling(data = BIOMOD_Data,
-                                        models = c('GLM','CTA','GAM','RF','ANN','MARS'),
-                                        models.options = BIOMOD_ModOptions,
-                                        NbRunEval = 10,
-                                        DataSplit = 80,
-                                        weighting.score = "TSS",
-                                        parallel = TRUE))
-  
-  
-  #ESM_ModelsEvaluations <- lapply(ESM_ModObject$mymodels, get_evaluations)
-  
-  if(inherits(ESM_ModObject,"try-error")){
-    cat("\n\n!!!Error while performing model calibration for:", selSpecies,"!!!\n\n\n")
-    next
-  }
-    
-  
-  # Evaluation and average of simple bivariate models to ESMs
-  ESM_EnsembleMod <- ecospat.ESM.EnsembleModeling(ESM_ModObject,
-                                                  weighting.score = c("TSS"),
-                                                  threshold = 0.75)
-  
-  write.csv(ESM_EnsembleMod$ESM.evaluations,
-            file = paste(selSpecies,"_ESM_EvaluationMetrics_ensProj.csv",sep=""))
+  load(list.files(paste("./ESM.BIOMOD.output_",selSpecies,sep=""), 
+                  pattern="ESM_EnsembleModeling...", full.names = TRUE)[1])
+  ESM_EnsembleMod <- output
+
+
+  setwd(paste("./ESM.BIOMOD.output_",selSpecies,sep=""))
   
   
   # Loop through all the raster stacks containing different projections --------
@@ -145,9 +108,9 @@ for(i in 1:length(spCodes)){
     cat("\n\nPerforming ESM projection for:",projName,"...\n")
     
     eval(parse(text=
-    paste("ESM_Proj <- try(ecospat.ESM.Projection(ESM.modeling.output = ESM_ModObject,
-                                     new.env = ",projName,",
-                                     parallel = FALSE))",sep="")
+                 paste("ESM_Proj <- try(ecospat.ESM.Projection(ESM.modeling.output = ESM_ModObject,
+                       new.env = ",projName,",
+                       parallel = FALSE))",sep="")
     ))
     
     
@@ -240,7 +203,7 @@ for(i in 1:length(spCodes)){
                 filename = paste(selSpecies,"_ESM_ensProj_",projName,".tif",sep=""),
                 overwrite=TRUE)
   }
-
+  
   cat("\n\n||---------- Finished ensemble projection for:",selSpecies,"----------||\n\n")
   
   
