@@ -51,7 +51,10 @@ for(fld in dirList){
   cat("-> Loading data for:",fld,"..... ")  
   i<-i+1
   projList[i] <- basename(fld)
-  fl.climVars <- list.files(fld,pattern = ".tif$", full.names = TRUE)
+  fl.climVars <- list.files(fld, pattern = ".tif$", full.names = TRUE)
+  
+  print(fl.climVars)
+  
   assign(x = projList[i], value = stack(c(fl.topoVars, fl.climVars)))
   cat("done.\n\n")
 }
