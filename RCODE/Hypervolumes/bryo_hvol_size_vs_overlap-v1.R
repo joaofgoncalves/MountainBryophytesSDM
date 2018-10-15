@@ -1,9 +1,12 @@
 
 library(dplyr)
 library(ggplot2)
+library(raster)
+library(rgdal)
 
-
-
+# Load pre-computed results
+load("./OUT/HyperVolumeBySpecies-v1.RData")
+load("./OUT/NicheOvlpDistances_v1.RData")
 
 ## ----------------------------------------------------------------------------------------------- ##
 ## Load env and species data -----
@@ -34,9 +37,7 @@ spDataVars <- data.frame(spCode = as.character(spData$Cod_esp),
 ## Analyze hypervolume results -----
 ## ----------------------------------------------------------------------------------------------- ##
 
-# Load pre-computed results
-load("./OUT/HyperVolumeBySpecies-v1.RData")
-load("./OUT/NicheOvlpDistances_v1.RData")
+
 
 # Create full distance matrix based on Jaccard similarity of niches
 dd <- as.dist(ovlp_jacc, upper=TRUE)
@@ -50,14 +51,21 @@ DF <- data.frame(spCode = spCodesAll,
 # Plot the hypervolume size vs the average overlap between species
 plot(DF$avg_ovlp, log10(DF$hv_svm))
 
+
 # Get the average elevation per species
-avgElevs <- spDataVars %>% 
-  group_by(spCode) %>% 
-  summarize(avgElev = mean(ELEV), stdElev = sd(ELEV)) %>% 
+avgElevs <- spDataVars %>%
+  group_by(spCode) %>%
+  summarize(avgElev = mean(ELEV), stdElev = sd(ELEV), 
+            nRecords=length(ELEV)) %>%
   as.data.frame
 
 # Merge data
 tb <- merge(DF,avgElevs, by="spCode")
+
+#cor.test(tb$hv_svm, tb$nRecords, method="spearman")
+cor.test(tb$hv_svm, tb$nRecords, method="pearson")
+plot(hv_svm ~nRecords, data=tb)
+
 
 # Plot hv size vs elevation
 plot(log10(tb$hv_svm), log10(tb$avgElev))
