@@ -33,12 +33,6 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 
-/DATA
 DATA/
-/DATA/
-/OUT
-/OUT/
 OUT/
-/OUT_1
-/OUT_1/
-OUT_1/
+RESULTS_2_SHARE/

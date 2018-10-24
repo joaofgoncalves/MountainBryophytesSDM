@@ -1,4 +1,14 @@
 
+## --------------------------------------------------------- ##
+##
+## Fit, calculate and plot hypervolumes
+##
+## João Gonçalves & Helena Hespanhol
+## CIBIO/InBIO, FCUP
+## Porto, 10/2018
+##
+## --------------------------------------------------------- ##
+
 
 library(hypervolume)
 library(raster)
@@ -31,8 +41,7 @@ spData <- readOGR("./DATA/VECTOR/Bryophyte_dataset","And_Gri_Rac_PI_all_2")
 spDataVars <- data.frame(spCode = as.character(spData$Cod_esp), 
                          scale(raster::extract(y = spData, x = rstStack)),
                          #raster::extract(y = spData, x = rstStack),
-                         stringsAsFactors = FALSE) %>% 
-              na.omit
+                         stringsAsFactors = FALSE) %>% na.omit
 
 ## ----------------------------------------------------------------------------------------------- ##
 ## Perform the hypervolume analysis per species -----
@@ -116,7 +125,7 @@ for(sp in spCodesAll){
   cat("\nFinished processing species! ------------------------- \n\n\n")
   
 }
-  
+
 save.image("HyperVolumeBySpecies-v2.RData")
 
 
@@ -132,10 +141,12 @@ hv_sp <- data.frame(spCodes=spCodesAll,
                     hv_box = hv_box_vols)
 
 hv_sp_log10 <- data.frame(spCodes=spCodesAll,
-                    hv_gauss = log10(hv_gauss_vols),
-                    hv_svm = log10(hv_svm_vols),
-                    hv_box = log10(hv_box_vols))
+                    hv_gauss_log = log10(hv_gauss_vols),
+                    hv_svm_log = log10(hv_svm_vols),
+                    hv_box_log = log10(hv_box_vols))
 
+write.csv(hv_sp,"./RESULTS_2_SHARE/hvolume_bySpecies-v2.csv",row.names = FALSE)
+write.csv(hv_sp_log10,"./RESULTS_2_SHARE/log10_hvolume_bySpecies-v2.csv",row.names = FALSE)
 
 # Plot ----------------------------------------------------------------------------- 
 
