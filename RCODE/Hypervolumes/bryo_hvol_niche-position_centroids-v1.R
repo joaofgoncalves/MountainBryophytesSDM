@@ -9,6 +9,9 @@
 ##
 ## --------------------------------------------------------- ##
 
+library(dplyr)
+library(hypervolume)
+
 # Get overall centroid for all the species records
 pointCentroids <- apply(spDataVars %>% select(-1) %>% na.omit, 2, mean)
 

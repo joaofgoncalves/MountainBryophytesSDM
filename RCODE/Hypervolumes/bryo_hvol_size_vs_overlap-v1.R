@@ -11,6 +11,10 @@ load("./OUT/NicheOvlpDistances-NewVars_v2.RData")
 
 hvols_DF <- readxl::read_excel("RESULTS_2_SHARE/hvolumes_marginDist-v1.xlsx") %>% as.data.frame
 
+
+cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance)
+cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance, method="spearman")
+
 ## ----------------------------------------------------------------------------------------------- ##
 ## Load env and species data -----
 ## ----------------------------------------------------------------------------------------------- ##
@@ -63,9 +67,27 @@ plot(DF$hv_svm_log, DF$avg_ovlp)
 cor.test(DF$hv_svm_log, DF$avg_ovlp)
 cor.test(DF$hv_svm_log, DF$avg_ovlp, method="spearman")
 
-plot(DF$hv_svm_log, DF$marginDistance)
-cor.test(DF$hv_svm_log, DF$marginDistance)
-cor.test(DF$hv_svm_log, DF$marginDistance, method="spearman")
+plot(DF$marginDistance, DF$avg_ovlp)
+cor.test(DF$marginDistance, DF$avg_ovlp)
+cor.test(DF$marginDistance, DF$avg_ovlp, method="spearman")
+
+g <- ggplot(DF %>% filter(spCode!="RACFAS"),
+            aes(x    = hv_svm_log, 
+                y    = avg_ovlp,
+                ymin = avg_ovlp - 0.5*std_ovlp, 
+                ymax = avg_ovlp + 0.5*std_ovlp)) + 
+  geom_errorbar() + 
+  geom_point(size=2.5, color="tomato") + 
+  geom_smooth(method="gam", formula = y ~ s(x,k=2)) +
+  xlab("Niche breadth (Log 10 hypervolume size)") + 
+  ylab("Average niche overlap (Jaccard similarity)")
+#geom_quantile()
+
+ggsave(filename = "./RESULTS_2_SHARE/NicheBreadth-vs-AvgNicheOverlap-v1.png", plot=g)
+
+plot(g)
+
+
 
 g <- ggplot(DF %>% filter(spCode!="RACFAS"),
             aes(x    = hv_svm_log, 
@@ -100,13 +122,19 @@ plot(g)
 ggsave(filename = "./RESULTS_2_SHARE/NichePosition-vs-AvgNicheOverlap-v1.png", plot=g)
 
 
-g1 <- mgcv::gam(avg_ovlp~s(hv_svm_log),data=DF)
+g1 <- mgcv::gam(avg_ovlp~s(hv_svm_log,k=3),data=DF)
 summary(g1)
 AIC(g1)
 
-g2 <- mgcv::gam(avg_ovlp~s(marginDistance),data=DF)
+g2 <- mgcv::gam(avg_ovlp~s(marginDistance,k=3),data=DF)
 summary(g2)
 AIC(g2)
+
+
+g3 <- mgcv::gam(avg_ovlp~s(hv_svm_log,k=3) + s(marginDistance,k=3),data=DF)
+summary(g3)
+AIC(g3)
+
 
 
 ## ----------------------------------------------------------------------------- ##
@@ -194,6 +222,32 @@ g <- ggplot(hv_DF,aes(y=stdElev,x=hv_svm_log)) +
 plot(g)
 
 ggsave(filename = "./RESULTS_2_SHARE/Log10Hvolume_vs_StdElevation-v1.png", plot=g)
+
+## ----------------------------------------------------------------------------- ##
+
+
+g <- ggplot(DF,aes(x=avgElev, y=avg_ovlp)) +
+  geom_errorbar(aes(ymin = avg_ovlp - 0.5*std_ovlp, ymax = avg_ovlp+0.5*std_ovlp)) + 
+  geom_errorbarh(aes(xmin = avgElev - 0.5*stdElev, xmax = avgElev+0.5*stdElev)) + 
+  geom_point(color="tomato", size=2.5) + 
+  #geom_smooth(method="lm") + 
+  geom_quantile(size=1) + 
+  ylab("Average overlap (Jaccard) ± 0.5 × std.-dev.") + 
+  xlab("Average elevation (m) ± 0.5 × std.-dev.")
+
+plot(g)
+
+ggsave(filename = "./RESULTS_2_SHARE/AvgElev_vs_AvgOverlapJacc-v1-qq.png", plot=g)
+
+cor.test(DF$avgElev, DF$avg_ovlp, method="spearman")
+cor.test(DF$avgElev, DF$avg_ovlp, method="pearson")
+
+rq1 <- quantreg::rq(avg_ovlp~avgElev, data = DF, tau = 0.25)
+rq2 <- quantreg::rq(avg_ovlp~avgElev, data = DF, tau = 0.5)
+rq3 <- quantreg::rq(avg_ovlp~avgElev, data = DF, tau = 0.75)
+
+anova(rq1,rq2,rq3)
+
 
 
 
