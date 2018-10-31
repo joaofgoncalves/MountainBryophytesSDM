@@ -16,9 +16,6 @@ library(doParallel)
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
-# devtools::install_github("joaofgoncalves/biomod2plus",
-#                          auth_token = "af388a5c415d61d1b1da2afc54ac4146854710e3",
-#                          dependencies=FALSE)
 
 #setwd("D:/MyDocs/Dropbox/Modelling_mountaintop_bryophytes_climate_change/MountainBryophytesSDM")
 setwd("~/myfiles/MountainBryophytesSDM")
@@ -175,8 +172,9 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
   
   # Calculate variable importance across all PA sets, eval rouns and algorithms 
   varImportance <- get_variables_importance(myBiomodModelOut)
-  varImportanceByVariableAVG <- apply(varImportance,1,mean)
-  varImportanceByVariableSTD <- apply(varImportance,1,sd)
+  varImportanceByVariableAVG <- apply(varImportance,1,mean, na.rm = TRUE)
+  varImportanceByVariableSTD <- apply(varImportance,1,sd, na.rm = TRUE)
+  
   vimpDF <- data.frame(cnames=names(varImportanceByVariableAVG),
                        vimpAVG = varImportanceByVariableAVG, 
                        varImpSTD=varImportanceByVariableSTD) %>% 
