@@ -33,8 +33,14 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 
+<<<<<<< HEAD
 *.jar
 
 DATA/
 OUT/
 
+=======
+DATA/
+OUT/
+RESULTS_2_SHARE/
+>>>>>>> fd628f113b6332628a73639a32487479ca8b0d8a
