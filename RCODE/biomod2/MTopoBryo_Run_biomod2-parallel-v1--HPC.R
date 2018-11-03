@@ -9,12 +9,12 @@ library(rgdal)
 library(magrittr)
 library(tools)
 library(stringr)
-library(foreach)
-library(parallel)
-library(doParallel)
+#library(foreach)
+#library(parallel)
+#library(doParallel)
 
-cl <- makeCluster(3)
-registerDoParallel(cl)
+# cl <- makeCluster(3)
+# registerDoParallel(cl)
 
 
 #setwd("D:/MyDocs/Dropbox/Modelling_mountaintop_bryophytes_climate_change/MountainBryophytesSDM")
@@ -93,8 +93,11 @@ myBiomodOptions <- biomod2::BIOMOD_ModelingOptions(GAM = list(k = 4),
 ## -------------------------------------------------------------------------------------- ##
 
 
-
-foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biomod2","sp","dplyr","magrittr","biomod2plus"), .export   = c(projNames,"projNames","allSpNames","myBiomodOptions","spBryoDF")) %dopar% {
+for(i in 5:length(allSpNames)){
+#foreach(i = 1:length(allSpNames), .verbose  = TRUE, 
+  # .packages = c("raster","biomod2","sp","dplyr","magrittr","biomod2plus"), 
+  # .export   = c(projNames,"projNames","allSpNames","myBiomodOptions","spBryoDF")) %dopar% {
+  # 
   
   setwd("~/myfiles/MountainBryophytesSDM/OUT/MODS")                                  
   
@@ -119,7 +122,7 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
   myBiomodData <- BIOMOD_FormatingData(resp.var = spRecordPoints,
                                        expl.var = current,
                                        resp.name = sp,
-                                       PA.nb.rep = 5, # Number of pseudo-absences sets
+                                       PA.nb.rep = 3, # Number of pseudo-absences sets
                                        #PA.nb.absences = ifelse(Npresences < 500, Npresences*10, Npresences), # Nr of pseudo-absences
                                        PA.nb.absences = biomod2plus:::powerFunPAnumberCalc(Npresences),
                                        PA.strategy = 'random') # PA generation method
@@ -129,10 +132,10 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
   ## -------------------------------------------------------------------------------------- ##
   
   
-  myBiomodModelOut <- BIOMOD_Modeling(
+  myBiomodModelOut <- try(BIOMOD_Modeling(
     data = myBiomodData, # Input data
     models = c('GLM',
-               #'GBM',
+               'GBM',
                'GAM','CTA','ANN',
                'FDA','MARS','RF',
                'MAXENT.Phillips', 
@@ -147,6 +150,16 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
     SaveObj = TRUE,
     rescal.all.models = FALSE,
     do.full.models = TRUE) # Model with all data?
+  )
+  
+  
+  if(inherits(myBiomodModelOut, "try-error")){
+    sink(file = "log.txt", append=TRUE)
+    cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_Modeling ###\n\n")
+    #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+    sink()
+    next
+  }
   
   
   # Get model evaluation values
@@ -226,18 +239,25 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
   # Ensemble all partial models
   selMods <- twoStepBestModelSelection(myBiomodModelOut, 
                                        evalMetric = "TSS", 
-                                       nrBestAlgos = 5, 
+                                       nrBestAlgos = 7, 
                                        bestAlgoFun = stats::median, 
-                                       topFraction = 0.10)
+                                       topFraction = 0.05)
   
-  myBiomodEM <- BIOMOD_EnsembleModeling(modeling.output = myBiomodModelOut,
+  myBiomodEM <- try(BIOMOD_EnsembleModeling(modeling.output = myBiomodModelOut,
                                         chosen.models = selMods,
                                         em.by = 'all',
                                         #eval.metric = c('TSS'),
                                         #eval.metric.quality.threshold = quantileThresh,
                                         prob.mean = TRUE,
-                                        prob.mean.weight.decay = 'proportional')
+                                        prob.mean.weight.decay = 'proportional'))
   
+  if(inherits(myBiomodEM, "try-error")){
+    sink(file = "log.txt", append=TRUE)
+    cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_EnsembleModeling ###\n\n")
+    #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+    sink()
+    next
+  }
   
   # Get evaluation scores for the Ensemble Modelling stage
   emEvalDF <- as.data.frame(get_evaluations(myBiomodEM))
@@ -260,7 +280,7 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
     cat("## -------------------------------------------------------------------------- ##\n\n")
     
     # Obtain spatiotemporal projections
-    myBiomodProj <- BIOMOD_Projection(modeling.output = myBiomodModelOut,
+    myBiomodProj <- try(BIOMOD_Projection(modeling.output = myBiomodModelOut,
                                       new.env = get(projName),
                                       proj.name = projName, ## Name of the projection from above variable proj.name
                                       selected.models = modelsToUse,
@@ -269,7 +289,15 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
                                       compress = 'gzip',
                                       clamping.mask = TRUE,
                                       output.format = '.grd',
-                                      do.stack = TRUE)
+                                      do.stack = TRUE))
+    
+    if(inherits(myBiomodProj, "try-error")){
+      sink(file = "log.txt", append=TRUE)
+      cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_Projection /",projname,"###\n\n")
+      #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+      sink()
+      next
+    }
     
     
     # Perform the ensembling of projections
@@ -282,6 +310,14 @@ foreach(i = 1:length(allSpNames), .verbose  = TRUE, .packages = c("raster","biom
     inFolder <- paste(getwd(),"/",sp,"/proj_",projName,sep="")
     outFolder <- paste(inFolder,"/","GeoTIFF", sep="")
     dir.create(outFolder)
+    
+    if(inherits(myBiomodEF, "try-error")){
+      sink(file = "log.txt", append=TRUE)
+      cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_EnsembleForecasting /",projName,"###\n\n")
+      #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+      sink()
+      next
+    }
     
     convertToGeoTIFF(inFolder, outFolder)
     

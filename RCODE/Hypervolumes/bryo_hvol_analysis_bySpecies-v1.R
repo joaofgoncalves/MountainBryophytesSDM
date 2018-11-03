@@ -18,22 +18,24 @@ library(rgdal)
 library(ggplot2)
 
 #rm(list=ls())
+setwd("~/myfiles/MountainBryophytesSDM")
 
 ## ----------------------------------------------------------------------------------------------- ##
 ## Load env and species data -----
 ## ----------------------------------------------------------------------------------------------- ##
 
 # Data paths to raster variables
-climVarsPaths <- list.files("./DATA/RASTER/WorldClim_1km/a2000", pattern=".tif$", full.names = TRUE)
+climVarsPaths <- list.files("./DATA/RASTER/Clim/a2000", pattern=".tif$", full.names = TRUE)
 topoVarsPaths <- list.files("./DATA/RASTER/TopoVars", pattern=".tif$", full.names = TRUE)[c(2,5)]
-soilVarsPaths <- list.files("./DATA/RASTER/Soil", pattern=".tif$", full.names = TRUE)[c(1,8)]
+soilVarsPaths <- list.files("./DATA/RASTER/Soil", pattern=".tif$", full.names = TRUE)[c(8)]
 
 # Load raster stack with climatic and topographic data
 rstStack <- stack(c(climVarsPaths,topoVarsPaths,soilVarsPaths))
-names(rstStack) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOAWC","SOIPH")
+names(rstStack) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
 
 # Load shapefile
-spData <- readOGR("./DATA/VECTOR/Bryophyte_dataset","And_Gri_Rac_PI_all_2")
+spData <- readOGR("./DATA/VECTOR/Bryophyte_dataset","And_Gri_Rac_PI_all_2", 
+                  stringsAsFactors = FALSE)
 
 # Extract env data to points and remove NA's
 # Scale the entire dataset across species
@@ -47,6 +49,8 @@ spDataVars <- data.frame(spCode = as.character(spData$Cod_esp),
 ## Perform the hypervolume analysis per species -----
 ## ----------------------------------------------------------------------------------------------- ##
 
+# Species code
+spCodesAll <- as.character(unique(spData$Cod_esp))
 
 # Init data holders for hv volume
 hv_gauss_vols <- vector(mode="numeric", length = length(spCodesAll))
@@ -56,8 +60,6 @@ hv_box_vols <- vector(mode="numeric", length = length(spCodesAll))
 # Gather hv objects
 hvObj_BySpecies <- list()
 
-# Species code
-spCodesAll <- unique(spData$Cod_esp)
 
 if(file.exists("hv_spCodesCheck.csv")){
   
@@ -66,7 +68,6 @@ if(file.exists("hv_spCodesCheck.csv")){
 }else{
   # Make verification table by species
   spCodesCheck <- data.frame(SPECIES = spCodesAll, 
-                             #STATUS = c(rep("DONE",27),rep("NOT DONE",12)),
                              STATUS = c(rep("NOT DONE",length(spCodesAll))),
                              stringsAsFactors = FALSE)
   # Write table if it does not exists
@@ -126,7 +127,7 @@ for(sp in spCodesAll){
   
 }
 
-save.image("HyperVolumeBySpecies-v2.RData")
+save.image("HyperVolumeBySpecies-v3-20181101.RData")
 
 
 
@@ -145,8 +146,8 @@ hv_sp_log10 <- data.frame(spCodes=spCodesAll,
                     hv_svm_log = log10(hv_svm_vols),
                     hv_box_log = log10(hv_box_vols))
 
-write.csv(hv_sp,"./RESULTS_2_SHARE/hvolume_bySpecies-v2.csv",row.names = FALSE)
-write.csv(hv_sp_log10,"./RESULTS_2_SHARE/log10_hvolume_bySpecies-v2.csv",row.names = FALSE)
+write.csv(hv_sp,"./OUT/hvolume_bySpecies-v3-20181101.csv",row.names = FALSE)
+write.csv(hv_sp_log10,"./OUT/log10_hvolume_bySpecies-v3-20181101.csv",row.names = FALSE)
 
 # Plot ----------------------------------------------------------------------------- 
 
@@ -171,7 +172,7 @@ g <- ggplot(hv_sp_ord, aes(x=spCodes, y=hv_gauss)) +
 
 plot(g)
 
-ggsave("./OUT/HypervolumeSizesPerSpecies-HvGauss-v2.png", g, width = 5.5, height = 6)
+ggsave("./OUT/HypervolumeSizesPerSpecies-HvGauss-v3.png", g, width = 5.5, height = 6)
 
 
 # Plot  ----------------------------------------------------------------------------- 
@@ -197,7 +198,7 @@ g <- ggplot(hv_sp_ord, aes(x=spCodes, y=hv_svm)) +
 
 plot(g)
 
-ggsave("./OUT/HypervolumeSizesPerSpecies-HvSVM-v2.png", g, width = 5.5, height = 6)
+ggsave("./OUT/HypervolumeSizesPerSpecies-HvSVM-v3.png", g, width = 5.5, height = 6)
 
 
 # Plot  ----------------------------------------------------------------------------- 
@@ -222,7 +223,7 @@ g <- ggplot(hv_sp_ord, aes(x=spCodes, y=hv_box)) +
 
 plot(g)
 
-ggsave("./OUT/HypervolumeSizesPerSpecies-HvBox-v2.png", g, width = 5.5, height = 6)
+ggsave("./OUT/HypervolumeSizesPerSpecies-HvBox-v3.png", g, width = 5.5, height = 6)
 
 
 
