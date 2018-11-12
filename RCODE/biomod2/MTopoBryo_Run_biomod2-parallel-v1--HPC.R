@@ -18,7 +18,7 @@ library(stringr)
 
 
 #setwd("D:/MyDocs/Dropbox/Modelling_mountaintop_bryophytes_climate_change/MountainBryophytesSDM")
-setwd("~/myfiles/MountainBryophytesSDM")
+setwd("/home/cibio/myfiles/MountainBryophytesSDM")
 
 ## -------------------------------------------------------------------------------------- ##
 ## LOAD INPUT PRESENCE POINTS ----
@@ -38,44 +38,78 @@ allSpNames <- unique(spBryoData$Cod_esp)
 ## LOAD RASTER DATA  ----
 ## -------------------------------------------------------------------------------------- ##
 
-# Data paths to raster variables
-#climVarsPaths <- list.files("./DATA/RASTER/WorldClim_1km/a2000", pattern=".tif$", full.names = TRUE)
-climVarsPaths <- list.files("./DATA/RASTER/Clim/a2000", pattern=".tif$", full.names = TRUE)
-topoVarsPaths <- list.files("./DATA/RASTER/TopoVars", pattern=".tif$", full.names = TRUE)[c(2,5)]
-soilVarsPaths <- list.files("./DATA/RASTER/Soil", pattern=".tif$", full.names = TRUE)[c(8)]
+# # Data paths to raster variables
+# #climVarsPaths <- list.files("./DATA/RASTER/WorldClim_1km/a2000", pattern=".tif$", full.names = TRUE)
+# climVarsPaths <- list.files("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim/a2000", pattern=".tif$", full.names = TRUE)
+# topoVarsPaths <- list.files("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/TopoVars", pattern=".tif$", full.names = TRUE)[c(2,5)]
+# soilVarsPaths <- list.files("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Soil", pattern=".tif$", full.names = TRUE)[c(8)]
+# 
+# # Load raster stack with climatic and topographic data
+# current <- stack(c(climVarsPaths,topoVarsPaths,soilVarsPaths))
+# names(current) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
+# 
+# # Directories 
+# #climProjDirs <- list.dirs("./DATA/RASTER/WorldClim_1km", recursive = FALSE)[-c(1,seq(3,9,by=2))]
+# climProjDirs <- list.dirs("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim", recursive = FALSE)[-c(1,seq(3,9,by=2))]
+# 
+# climProjNames <- basename(climProjDirs)
+# 
+# 
+# # for(projDir in climProjDirs){
+# #   
+# #   climProjName <- basename(projDir)
+# #   print(climProjName)
+# #   
+# #   assign(climProjName, stack(list.files(projDir, pattern = ".tif$", full.names = TRUE)))
+# #   
+# #   assign(climProjName, stack(projectRaster(get(climProjName),current, method = "ngb"), 
+# #                              stack(topoVarsPaths,soilVarsPaths)))
+# #   
+# #   assign(climProjName,`names<-`(get(climProjName), 
+# #                                 c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")))
+# #   
+# # }
+# 
+# he45bi50 <- stack(stack("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim/he45bi50_proj_BIO_11_17_19.tif"),
+#                   stack(topoVarsPaths,soilVarsPaths))
+# names(he45bi50) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
+# 
+# 
+# he85bi50 <- stack(stack("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim/he85bi50_proj_BIO_11_17_19.tif"),
+#                   stack(topoVarsPaths,soilVarsPaths))
+# names(he85bi50) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
+# 
+# 
+# mp45bi50 <- stack(stack("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim/mp45bi50_proj_BIO_11_17_19.tif"),
+#                   stack(topoVarsPaths,soilVarsPaths))
+# names(mp45bi50) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
+# 
+# 
+# mp85bi50 <- stack(stack("/home/cibio/myfiles/MountainBryophytesSDM/DATA/RASTER/Clim/mp85bi50_proj_BIO_11_17_19.tif"),
+#                   stack(topoVarsPaths,soilVarsPaths))
+# names(mp85bi50) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
 
-# Load raster stack with climatic and topographic data
-current <- stack(c(climVarsPaths,topoVarsPaths,soilVarsPaths))
-names(current) <- c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")
-
-# Directories 
-#climProjDirs <- list.dirs("./DATA/RASTER/WorldClim_1km", recursive = FALSE)[-c(1,seq(3,9,by=2))]
-climProjDirs <- list.dirs("./DATA/RASTER/Clim", recursive = FALSE)[-c(1,seq(3,9,by=2))]
-
-climProjNames <- basename(climProjDirs)
 
 
-for(projDir in climProjDirs){
-  
-  climProjName <- basename(projDir)
-  print(climProjName)
-  
-  assign(climProjName, stack(list.files(projDir, pattern = ".tif$", full.names = TRUE)))
-  
-  assign(climProjName, stack(projectRaster(get(climProjName),current, method = "ngb"), 
-                             stack(topoVarsPaths,soilVarsPaths)))
-  
-  assign(climProjName,`names<-`(get(climProjName), 
+fl <- list.files("./DATA/RASTER/_VARS", pattern=".tif$", full.names = TRUE)
+projNames <- gsub(".tif","",basename(fl))
+
+i <- 0
+for(fn in fl){
+  i<-i+1
+  assign(projNames[i], stack(fn))
+  assign(projNames[i],`names<-`(get(projNames[i]), 
                                 c(paste("BIO",c(11,17,19),sep=""),"ASPBR","TOPRI","SOIPH")))
-  
+  print(projNames[i])
 }
+
 
 
 ## -------------------------------------------------------------------------------------- ##
 ## PARAMETERS ----
 ## -------------------------------------------------------------------------------------- ##
 
-projNames <- c("current", climProjNames)
+#projNames <- c("current", climProjNames)
 
 # Model hyperparameters
 # GAM: changes k=4 to avoid overly complex models
@@ -83,8 +117,9 @@ projNames <- c("current", climProjNames)
 myBiomodOptions <- biomod2::BIOMOD_ModelingOptions(GAM = list(k = 4),
                                                    MAXENT.Phillips = list(threshold=FALSE,
                                                                           hinge=FALSE,
+                                                                          memory_allocated=12000,
                                                                           #path_to_maxent.jar="D:/MyDocs/temp"),
-                                                                          path_to_maxent.jar="~/myfiles/MountainBryophytesSDM"),
+                                                                          path_to_maxent.jar="~/myfiles"),
                                                    GBM = list(n.trees = 1500,
                                                               n.cores = 1))
 
@@ -92,14 +127,27 @@ myBiomodOptions <- biomod2::BIOMOD_ModelingOptions(GAM = list(k = 4),
 ## Run biomod2 ----
 ## -------------------------------------------------------------------------------------- ##
 
+## PROBLEMATIC SPECIES 
 
-for(i in 5:length(allSpNames)){
+## Error in MAXENT.Phillips projection...
+## GRIMER - 20
+
+
+
+# 1:length(allSpNames)
+
+# Total: 39 species
+# 24 -> 31
+# 32 -> 39
+
+for(i in 22){
 #foreach(i = 1:length(allSpNames), .verbose  = TRUE, 
   # .packages = c("raster","biomod2","sp","dplyr","magrittr","biomod2plus"), 
   # .export   = c(projNames,"projNames","allSpNames","myBiomodOptions","spBryoDF")) %dopar% {
   # 
   
-  setwd("~/myfiles/MountainBryophytesSDM/OUT/MODS")                                  
+  setwd("/home/cibio/myfiles/MountainBryophytesSDM/OUT/MODS")                                  
+  #setwd("/mnt/dados/datasets/jg/OUT/MODS")   
   
   sp <- as.character(allSpNames)[i]                                  
   #sp <- abbrevNames(spName)
@@ -156,7 +204,7 @@ for(i in 5:length(allSpNames)){
   if(inherits(myBiomodModelOut, "try-error")){
     sink(file = "log.txt", append=TRUE)
     cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_Modeling ###\n\n")
-    #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+    #unlink(paste("/home/cibio/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
     sink()
     next
   }
@@ -254,7 +302,7 @@ for(i in 5:length(allSpNames)){
   if(inherits(myBiomodEM, "try-error")){
     sink(file = "log.txt", append=TRUE)
     cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_EnsembleModeling ###\n\n")
-    #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+    #unlink(paste("/home/cibio/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
     sink()
     next
   }
@@ -294,7 +342,7 @@ for(i in 5:length(allSpNames)){
     if(inherits(myBiomodProj, "try-error")){
       sink(file = "log.txt", append=TRUE)
       cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_Projection /",projname,"###\n\n")
-      #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+      #unlink(paste("/home/cibio/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
       sink()
       next
     }
@@ -314,7 +362,7 @@ for(i in 5:length(allSpNames)){
     if(inherits(myBiomodEF, "try-error")){
       sink(file = "log.txt", append=TRUE)
       cat("### ERROR OCCURRED IN SPECIES:",sp,"in BIOMOD_EnsembleForecasting /",projName,"###\n\n")
-      #unlink(paste("~/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
+      #unlink(paste("/home/cibio/myfiles/MountainBryophytesSDM/OUT/MODS/",sp,sep=""), recursive = TRUE)
       sink()
       next
     }
