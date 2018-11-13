@@ -29,7 +29,7 @@ hv_overlap <- function(hv1, hv2, verbose=FALSE, ...){
 # ------------------------------------------------------------------------- #
 
 # Load hypervolume objects from previous analyses 
-load("./OUT/HyperVolumeBySpecies-v2.RData")
+load("./OUT/HyperVolumeBySpecies-v3-20181101.RData")
 
 # Load shapefile
 spData <- readOGR("./DATA/VECTOR/Bryophyte_dataset","And_Gri_Rac_PI_all_2")
@@ -73,7 +73,7 @@ for(i in 1:len){
   }
 }
 
-save(ovlp_jacc, ovlp_sors, file = "./OUT/NicheOvlpDistances-NewVars_v2.RData")
+save(ovlp_jacc, ovlp_sors, file = "./OUT/NicheOvlpDistances-NewVars_v3.RData")
 
 
 # --------------------------------------------------------------------------- #
@@ -89,12 +89,12 @@ ggd <- ggdendrogram(hc_jacc, rotate = TRUE, size = 3) +
   labs(title="Dendrogram of species niche overlap",
        subtitle="Jaccard distance between hypervolumes")
 
-ggsave("./OUT/DendroSpeciesNicheOvlp_Jacc-NewVars_v2.png",ggd,height = 7, width=9)
+ggsave("./OUT/DendroSpeciesNicheOvlp_Jacc-NewVars_v3.png",ggd,height = 7, width=9)
 
 ggd <- ggdendrogram(hc_sors, rotate = TRUE, size = 3) +
   labs(title="Dendrogram of species niche overlap",
        subtitle="Sorensen distance between hypervolumes")
 
-ggsave("./OUT/DendroSpeciesNicheOvlp_Sors-NewVars_v2.png",ggd,height = 7, width=9)
+ggsave("./OUT/DendroSpeciesNicheOvlp_Sors-NewVars_v3.png",ggd,height = 7, width=9)
 
 
