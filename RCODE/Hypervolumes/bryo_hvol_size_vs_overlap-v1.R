@@ -6,14 +6,14 @@ library(rgdal)
 library(hypervolume)
 
 # Load pre-computed results
-load("./OUT/HyperVolumeBySpecies-v2.RData")
-load("./OUT/NicheOvlpDistances-NewVars_v2.RData")
+load("./OUT/HyperVolumeBySpecies-v3.RData")
+load("./OUT/NicheOvlpDistances-NewVars_v3.RData")
 
-hvols_DF <- readxl::read_excel("RESULTS_2_SHARE/hvolumes_marginDist-v1.xlsx") %>% as.data.frame
-
-
-cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance)
-cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance, method="spearman")
+# hvols_DF <- readxl::read_excel("RESULTS_2_SHARE/hvolumes_marginDist-v1.xlsx") %>% as.data.frame
+# 
+# 
+# cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance)
+# cor.test(hvols_DF$hv_svm_log, hvols_DF$marginDistance, method="spearman")
 
 ## ----------------------------------------------------------------------------------------------- ##
 ## Load env and species data -----

@@ -12,6 +12,11 @@
 library(dplyr)
 library(hypervolume)
 
+
+# Load hypervolume objects from previous analyses 
+load("./OUT/HyperVolumeBySpecies-v3-20181101.RData")
+
+
 # Get overall centroid for all the species records
 pointCentroids <- apply(spDataVars %>% select(-1) %>% na.omit, 2, mean)
 
@@ -43,9 +48,9 @@ g <- ggplot(hv_DF %>% filter(spCode!="RACFAS"),aes(y = marginDistance, x = hv_sv
 
 plot(g)
 
-ggsave(filename = "./RESULTS_2_SHARE/Log10Hvolume_vs_MarginalDistance-v1.png", plot=g)
+ggsave(filename = "./RESULTS_2_SHARE/Log10Hvolume_vs_MarginalDistance-v3.png", plot=g)
 
-write.csv(hv_DF, "./RESULTS_2_SHARE/hvolumes_marginDist-v1.csv", row.names=FALSE)
+write.csv(hv_DF, "./RESULTS_2_SHARE/hvolumes_marginDist-v3.csv", row.names=FALSE)
 
 
 
