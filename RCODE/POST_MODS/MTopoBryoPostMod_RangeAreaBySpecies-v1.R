@@ -30,8 +30,9 @@ for(projName in projNames){
     
     rstStackProj <- stack(rstProj)
     
+    # Get raster data
     rstDF <- na.omit(values(rstStackProj))
-    
+    # Calculate the amount of suitable area (in terms of pixels)
     dfTmp <- data.frame(spNames[i], t(apply(rstDF[,1:3],2,sum)), nrow(rstDF))
     colnames(dfTmp) <- c("spNames", "suitArea_TSS", "suitArea_ROC", "suitArea_KAPPA", "totalArea_npix")
     
@@ -51,7 +52,7 @@ for(projName in projNames){
 
 
 ## ---------------------------------------------------------------------------------------------- ##
-## Get binary predictions (TSS) for current ----
+## Get binary predictions (TSS) for current period ----
 ##
 ## (this data is used to enable the calculation of Jaccard and Sorensen similarity indices as a 
 ## proxy to the overlap of species)
@@ -122,9 +123,12 @@ for(i in 1:length(spNames)){
   
 }
 
+# Calculate the indices based on dismo::nicheOverlap function ------- #
 
+# Matrix size equal to the number of species
 len <- nlayers(rstStackProj_curr)
 
+# Start the matrix holding calculations
 ltrimat <- matrix(1:len^2,len,len) %>% lower.tri
 ovlp_indI <- matrix(NA,len,len,dimnames = list(spNames,spNames))
 ovlp_indD <- matrix(NA,len,len,dimnames = list(spNames,spNames))
@@ -132,11 +136,12 @@ ovlp_indD <- matrix(NA,len,len,dimnames = list(spNames,spNames))
 tot2run <- sum(ltrimat)
 pb <- txtProgressBar(1,tot2run,style = 3)
 
+# Iterate through the distance bu only in the lower triangular part
 k <- 0
 for(i in 1:len){
   for(j in 1:len){
     
-    if(!ltrimat[i,j]){
+    if(!ltrimat[i,j]){ # skip if not the lower-tri matrix
       next 
     }
     
@@ -158,9 +163,6 @@ for(i in 1:len){
 
 saveRDS(ovlp_indI, "./OUT/dismo_nicheOverlap_indI_v3.rds")
 saveRDS(ovlp_indD, "./OUT/dismo_nicheOverlap_indD_v3.rds")
-
-
-
 
 
 ## ---------------------------------------------------------------------------------------------- ##
@@ -199,11 +201,16 @@ for(projName in projNames){
   
   names(rstStackProj_curr) <- spNames
   
+  # Make a complete RasterStack with all projections
   allRstStacks[[projName]] <- rstStackProj_curr
+  
+  # Write the raster data for all species
   writeRaster(rstStackProj_curr, filename = paste("./OUT/MODS/BIN_PREDS/binPreds_allSps_TSS_proj_",projName,".tif",sep=""))
 }
 
 
+# Start the matrices used to hold results from the overlap analyses
+#
 dynHab_he45 <- matrix(0,nrow=length(spNames),ncol=4,
                       dimnames=list(spNames,paste("p",1:4,sep="")))
 dynHab_he85 <- matrix(0,nrow=length(spNames),ncol=4,
@@ -218,8 +225,12 @@ pb <- txtProgressBar(min=1,max=length(spNames),style=3)
 i<-0
 for(spName in spNames){
   
-  i<-i+1
+  i<-i+1 # Iterator count
+  
+  # Current projection for the species
   r1 <- allRstStacks[["current"]][[spName]]
+  
+  # Future projections for each GCM/RCP combination
   r2 <- allRstStacks[["he45bi50"]][[spName]]
   r3 <- allRstStacks[["he85bi50"]][[spName]]
   r4 <- allRstStacks[["mp45bi50"]][[spName]]
@@ -258,6 +269,7 @@ for(spName in spNames){
   rr4[(r1==1) & (r5==0)] <- 4 # Loss 
   
   # Calculate cross-tabulations ---------------------- #
+  # and save values to matrices
   #
   rr1_tb <- table(values(rr1)) %>% as.matrix %>% t
   colnames(rr1_tb) <- paste("p",colnames(rr1_tb),sep="")
@@ -278,6 +290,8 @@ for(spName in spNames){
   setTxtProgressBar(pb,i)
 }
 
+## Calculate net habitat gains in % ----------------- #
+##
 
 d1 <- apply(dynHab_he45[,3:4],1,sum)
 dynHab_he45_rp <- cbind((dynHab_he45[,2:4] / d1) * 100 , net = (((dynHab_he45[,2] + dynHab_he45[,3]) - dynHab_he45[,4]) / d1) *100 )
@@ -295,7 +309,7 @@ d1 <- apply(dynHab_mp85[,3:4],1,sum)
 dynHab_mp85_rp <- cbind((dynHab_mp85[,2:4] / d1) * 100 , net = (((dynHab_mp85[,2] + dynHab_mp85[,3]) - dynHab_mp85[,4]) / d1) *100 )
 colnames(dynHab_mp85_rp) <- paste(c("pGain","pStable","pLoss","netHab"),"_mp85",sep="")
 
-
+# Join all matrices
 relHabShifts <- data.frame(spName = rownames(dynHab_he45),
                       dynHab_he45_rp,
                       dynHab_he85_rp,
