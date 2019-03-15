@@ -218,7 +218,22 @@ aggEnvData %>% # Env data by species
   left_join(perChangeClim, by="spName") %>% 
   left_join(relHabChange, by="spName")
 
-cm <- cor(nicheVars[,-c(1:13)],method="spearman") %>% round(2) 
+
+# Write data
+write.csv(nicheVars,"./OUT/nicheVars_v3.csv", row.names = FALSE)
+
+#cm <- cor(nicheVars[,-c(1:13)],method="spearman") %>% round(2) 
+cm <- cor(nicheVars[,-1],method="spearman") %>% round(2) 
+
+# Write data
+write.csv(cm,"./OUT/nicheVars_SpearmanCorrelation_v3.csv", row.names = FALSE)
+
+#cm <- cor(nicheVars[,-c(1:13)],method="spearman") %>% round(2) 
+cmPr <- cor(nicheVars[,-1]) %>% round(2) 
+
+# Write data
+write.csv(cmPr,"./OUT/nicheVars_PearsonCorrelation_v3.csv", row.names = FALSE)
+
 
 View(cm)
 
