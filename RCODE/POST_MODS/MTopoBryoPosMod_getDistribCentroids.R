@@ -39,7 +39,8 @@ for(i in 1:N){
   sfpts <- st_cast(rstPol_sf, 'POINT')
   sfCoords <- st_coordinates(sfpts)
   
-  wcentr[i,] <- apply(cbind(sfCoords[,"X"]*sfpts$area_m2,sfCoords[,"Y"]*sfpts$area_m2), 2, sum, na.rm=TRUE)/sum(sfpts$area_m2)
+  wcentr[i,] <- apply(cbind(sfCoords[,"X"]*sfpts$area_m2, 
+                            sfCoords[,"Y"]*sfpts$area_m2), 2, sum, na.rm=TRUE)/sum(sfpts$area_m2)
   centr[i,] <- apply(sfCoords, 2, mean)
   
   cat("Finished",i,"/",N,"..\nSp. name:",spNames[i],"\n\n")
