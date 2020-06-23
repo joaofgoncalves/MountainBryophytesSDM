@@ -38,3 +38,5 @@ vignettes/*.pdf
 DATA/
 OUT/
 RESULTS_2_SHARE/
+DOCS/
+RCODE/R_biomod2EZ/

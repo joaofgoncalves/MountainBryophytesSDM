@@ -216,6 +216,12 @@ spRichDiff_he85bi50 <- spRichrst_he85bi50 - spRichrst
 spRichDiff_mp45bi50 <- spRichrst_mp45bi50 - spRichrst
 spRichDiff_mp85bi50 <- spRichrst_mp85bi50 - spRichrst
 
+writeRaster(spRichDiff_he45bi50,filename="./RESULTS_2_SHARE/NicheMetricsOut/RASTER_DATA/spRichDiff_he45bi50_v1.tif")
+writeRaster(spRichDiff_he85bi50,filename="./RESULTS_2_SHARE/NicheMetricsOut/RASTER_DATA/spRichDiff_he85bi50_v1.tif")
+writeRaster(spRichDiff_mp45bi50,filename="./RESULTS_2_SHARE/NicheMetricsOut/RASTER_DATA/spRichDiff_mp45bi50_v1.tif")
+writeRaster(spRichDiff_mp85bi50,filename="./RESULTS_2_SHARE/NicheMetricsOut/RASTER_DATA/spRichDiff_mp85bi50_v1.tif")
+
+
 png(filename = paste("./RESULTS_2_SHARE/NicheMetricsOut/DISTRIB_MAPS/_spRichDiff_he45bi50-v1.png"), 
     res = 300, width=1700, height=1400)
 plot(spRichDiff_he45bi50,main="Species richness turnover (HE/RCP-4.5/2050)")
